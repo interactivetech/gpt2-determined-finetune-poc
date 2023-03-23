@@ -13,7 +13,8 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader, Dataset, SequentialSampler, RandomSampler
 from torch.utils.data.distributed import DistributedSampler
-
+from datasets import Dataset as HFDataset
+import pandas as pd
 # try:
 from torch.utils.tensorboard import SummaryWriter
 
@@ -24,16 +25,35 @@ from transformers import (WEIGHTS_NAME, AdamW, get_linear_schedule_with_warmup,
                                   GPT2Config, GPT2LMHeadModel, GPT2Tokenizer,
                                   OpenAIGPTConfig, OpenAIGPTLMHeadModel, OpenAIGPTTokenizer,
                                   RobertaConfig, RobertaForMaskedLM, RobertaTokenizer,
-                                  DistilBertConfig, DistilBertForMaskedLM, DistilBertTokenizer,TextDataset)
+                                  DistilBertConfig, DistilBertForMaskedLM, DistilBertTokenizer,TextDataset,DataCollatorForLanguageModeling)
 
+dataset_name='english_to_latex'
+if dataset_name == 'data_science':
+    output_dir='data_science_ckpts/'
+    per_gpu_train_batch_size=32*4
+    per_gpu_eval_batch_size=32*4
+    train_batch_size = 32*4
+    eval_batch_size=32*4
+    num_train_epochs=3
+    logging_steps=50
+    save_steps=50
+elif dataset_name == 'english_to_latex':
+    output_dir='english_to_latex_ckpts/'
+    per_gpu_train_batch_size=2
+    per_gpu_eval_batch_size=32
+    train_batch_size = 32
+    eval_batch_size=32
+    num_train_epochs=1
+    logging_steps=50
+    save_steps=50
 local_rank=-1
 max_steps=-1
-per_gpu_train_batch_size=32
-per_gpu_eval_batch_size=32
+# per_gpu_train_batch_size=32
+# per_gpu_eval_batch_size=32
 learning_rate=5e-5
-num_train_epochs=3
-train_batch_size = 32
-eval_batch_size=32
+# num_train_epochs=1
+# train_batch_size = 32
+# eval_batch_size=32
 gradient_accumulation_steps = 1
 adam_epsilon=1e-8
 warmup_steps=0
@@ -41,12 +61,53 @@ weight_decay=0.0
 mlm=False
 n_gpu=False
 fp16=False
-logging_steps=50
-save_steps=50
+# logging_steps=50
+# save_steps=50
 evaluate_during_training=True
-output_dir='test/'
+# output_dir='test/'
 device='cuda'
 max_grad_norm=1.0
+
+def get_eng_to_latex_dataset(tokenizer):
+    '''
+    '''
+
+    # Add our singular prompt
+    CONVERSION_PROMPT = 'LCT\n'  # LaTeX conversion task
+
+    CONVERSION_TOKEN = 'LaTeX:'
+    data = pd.read_csv('./data/english_to_latex.csv')
+    training_examples = f'{CONVERSION_PROMPT}English: ' + data['English'] + '\n' + CONVERSION_TOKEN + ' ' + data['LaTeX'].astype(str)
+    task_df = pd.DataFrame({'text': training_examples})
+    latex_data = HFDataset.from_pandas(task_df)  # turn a pandas DataFrame into a Dataset
+    def preprocess(examples):  # tokenize our text but don't pad because our collator will pad for us dynamically
+        return tokenizer(examples['text'], truncation=True)
+    latex_data = latex_data.map(preprocess, batched=True,remove_columns='text')
+    return latex_data
+
+def get_datasets(tokenizer):
+    '''
+    '''
+    if dataset_name=='english_to_latex':
+        dataset = get_eng_to_latex_dataset(tokenizer)
+    elif dataset_name=='data_science':
+        dataset = TextDataset(
+            tokenizer=tokenizer,
+            file_path='./data/PDS2.txt',  # Principles of Data Science - Sinan Ozdemir
+            block_size=32  # length of each chunk of text to use as a datapoint
+        )
+    else:
+        assert "Dataset Not Implemented"
+    return dataset
+
+def format_batch(batch):
+    '''
+    '''
+    if dataset_name=='english_to_latex':
+        inputs, outputs = (batch['input_ids'].to(device),batch['input_ids'].to(device))
+    else:
+        inputs, outputs = (batch.to(device),batch.to(device))
+    return inputs, outputs
 def set_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
@@ -81,11 +142,12 @@ def evaluate(model, tokenizer, prefix=""):
     eval_output_dir = output_dir
 
     # eval_dataset = load_and_cache_examples(args, tokenizer, evaluate=True)
-    eval_dataset = TextDataset(
-        tokenizer=tokenizer,
-        file_path='./data/PDS2.txt',  # Principles of Data Science - Sinan Ozdemir
-        block_size=32  # length of each chunk of text to use as a datapoint
-    )
+    # eval_dataset = TextDataset(
+    #     tokenizer=tokenizer,
+    #     file_path='./data/PDS2.txt',  # Principles of Data Science - Sinan Ozdemir
+    #     block_size=32  # length of each chunk of text to use as a datapoint
+    # )
+    eval_dataset = get_datasets(tokenizer)
     if not os.path.exists(eval_output_dir) and local_rank in [-1, 0]:
         os.makedirs(eval_output_dir)
 
@@ -145,23 +207,24 @@ if __name__ == '__main__':
                         
     tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
 
-    dataset = TextDataset(
-        tokenizer=tokenizer,
-        file_path='./data/PDS2.txt',  # Principles of Data Science - Sinan Ozdemir
-        block_size=32  # length of each chunk of text to use as a datapoint
-    )
-
+    # dataset = TextDataset(
+    #     tokenizer=tokenizer,
+    #     file_path='./data/PDS2.txt',  # Principles of Data Science - Sinan Ozdemir
+    #     block_size=32  # length of each chunk of text to use as a datapoint
+    # )
+    dataset = get_datasets(tokenizer)
     config = GPT2Config.from_pretrained('gpt2')
 
     tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+    tokenizer.pad_token = tokenizer.eos_token
 
     model = GPT2LMHeadModel.from_pretrained('gpt2')
     model.to(device)
 
     # train_sampler = RandomSampler(train_dataset) if local_rank == -1 else DistributedSampler(train_dataset)
     train_sampler = RandomSampler(dataset)
-
-    train_dataloader = DataLoader(dataset, sampler=train_sampler, batch_size=train_batch_size)
+    data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
+    train_dataloader = DataLoader(dataset, collate_fn =data_collator ,sampler=train_sampler, batch_size=train_batch_size)
 
     t_total = len(dataset) // gradient_accumulation_steps * num_train_epochs
 
@@ -193,12 +256,14 @@ if __name__ == '__main__':
     for _ in train_iterator:
         epoch_iterator = tqdm(train_dataloader, desc="Iteration", disable=local_rank not in [-1, 0])
         for step, batch in enumerate(epoch_iterator):
-            inputs, labels = mask_tokens(batch, tokenizer, None) if mlm else (batch, batch)
-            inputs = inputs.to(device)
-            labels = labels.to(device)
+            # inputs, labels = mask_tokens(batch, tokenizer, None) if mlm else (batch, batch)
+            # inputs = inputs.to(device)
+            # labels = labels.to(device)
+            inputs, labels = format_batch(batch)
             model.train()
             
             outputs = model(inputs, masked_lm_labels=labels) if mlm else model(inputs, labels=labels)
+            # print("outputs: ",outputs.keys())
             loss = outputs[0]  # model outputs are always tuple in transformers (see doc)
             if n_gpu > 1:
                 loss = loss.mean()  # mean() to average on multi-gpu parallel training
@@ -233,13 +298,13 @@ if __name__ == '__main__':
                 if local_rank in [-1, 0] and save_steps > 0 and global_step % save_steps == 0:
                     checkpoint_prefix = 'checkpoint'
                     # Save model checkpoint
-                    output_dir = os.path.join(output_dir, '{}-{}'.format(checkpoint_prefix, global_step))
-                    if not os.path.exists(output_dir):
-                        os.makedirs(output_dir)
+                    train_output_dir = os.path.join(output_dir, '{}-{}'.format(checkpoint_prefix, global_step))
+                    if not os.path.exists(train_output_dir):
+                        os.makedirs(train_output_dir)
                     model_to_save = model.module if hasattr(model, 'module') else model  # Take care of distributed/parallel training
-                    model_to_save.save_pretrained(output_dir)
-                    torch.save(args, os.path.join(output_dir, 'training_args.bin'))
-                    logger.info("Saving model checkpoint to %s", output_dir)
+                    model_to_save.save_pretrained(train_output_dir)
+                    # torch.save(os.path.join(train_output_dir, 'training_args.bin'))
+                    logger.info("Saving model checkpoint to %s", train_output_dir)
 
                     # _rotate_checkpoints(args, checkpoint_prefix)
 

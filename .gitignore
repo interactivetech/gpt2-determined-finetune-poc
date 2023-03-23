@@ -3,6 +3,13 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# files
+*.json
+runs/
+*.pth
+data_science_ckpts/
+test/
+
 # C extensions
 *.so
 output_dir/
