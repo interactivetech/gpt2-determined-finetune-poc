@@ -26,7 +26,9 @@ from transformers import (WEIGHTS_NAME, AdamW, get_linear_schedule_with_warmup,
                                   OpenAIGPTConfig, OpenAIGPTLMHeadModel, OpenAIGPTTokenizer,
                                   RobertaConfig, RobertaForMaskedLM, RobertaTokenizer,
                                   DistilBertConfig, DistilBertForMaskedLM, DistilBertTokenizer,TextDataset,DataCollatorForLanguageModeling)
-
+'''
+Length of DS book: 601088 examples block 32
+'''
 dataset_name='english_to_latex'
 if dataset_name == 'data_science':
     output_dir='data_science_ckpts/'
@@ -76,7 +78,7 @@ def get_eng_to_latex_dataset(tokenizer):
     CONVERSION_PROMPT = 'LCT\n'  # LaTeX conversion task
 
     CONVERSION_TOKEN = 'LaTeX:'
-    data = pd.read_csv('./data/english_to_latex.csv')
+    data = pd.read_csv('/run/determined/workdir/shared_fs/workshop_data/english_to_latex.csv')
     training_examples = f'{CONVERSION_PROMPT}English: ' + data['English'] + '\n' + CONVERSION_TOKEN + ' ' + data['LaTeX'].astype(str)
     task_df = pd.DataFrame({'text': training_examples})
     latex_data = HFDataset.from_pandas(task_df)  # turn a pandas DataFrame into a Dataset
@@ -93,7 +95,7 @@ def get_datasets(tokenizer):
     elif dataset_name=='data_science':
         dataset = TextDataset(
             tokenizer=tokenizer,
-            file_path='./data/PDS2.txt',  # Principles of Data Science - Sinan Ozdemir
+            file_path='/run/determined/workdir/shared_fs/workshop_data/PDS2.txt',  # Principles of Data Science - Sinan Ozdemir
             block_size=32  # length of each chunk of text to use as a datapoint
         )
     else:
@@ -106,7 +108,7 @@ def format_batch(batch):
     if dataset_name=='english_to_latex':
         inputs, outputs = (batch['input_ids'].to(device),batch['input_ids'].to(device))
     else:
-        inputs, outputs = (batch.to(device),batch.to(device))
+        inputs, outputs = (batch['input_ids'].to(device),batch['input_ids'].to(device))
     return inputs, outputs
 def set_seed(seed):
     random.seed(seed)
