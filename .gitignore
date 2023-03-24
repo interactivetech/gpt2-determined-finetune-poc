@@ -6,6 +6,8 @@ __pycache__/
 # files
 *.json
 runs/
+*.pt
+checkpoints/
 *.pth
 data_science_ckpts/
 test/
