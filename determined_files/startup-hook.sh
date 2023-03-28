@@ -1,1 +1,1 @@
-pip install transformers datasets setuptools==59.5.0
+pip install setuptools==59.5.0
