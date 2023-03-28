@@ -104,20 +104,13 @@ class GPT2Finetune(PyTorchTrial):
         '''
         if self.dataset_name=='english_to_latex':
             dataset = self.get_eng_to_latex_dataset()
-        elif self.dataset_name=='data_science':
-            dataset = TextDataset(
-                tokenizer=self.tokenizer,
-                file_path='/run/determined/workdir/shared_fs/workshop_data/PDS2.txt',  # Principles of Data Science - Sinan Ozdemir
-                block_size=32  # length of each chunk of text to use as a datapoint
-            )
-        elif self.dataset_name=='hamlet':
-            dataset = TextDataset(
-                tokenizer=self.tokenizer,
-                file_path='/run/determined/workdir/shared_fs/workshop_data/hamlet.txt',  # Principles of Data Science - Sinan Ozdemir
-                block_size=32  # length of each chunk of text to use as a datapoint
-            )
         else:
-            assert "Dataset Not Implemented"
+            dataset_path = '/run/determined/workdir/shared_fs/workshop_data/{}.txt'.format(self.dataset_name)
+            dataset = TextDataset(
+                tokenizer=self.tokenizer,
+                file_path=dataset_path,  # Principles of Data Science - Sinan Ozdemir
+                block_size=32  # length of each chunk of text to use as a datapoint
+            )
         return dataset
 
     def format_batch(self,batch):

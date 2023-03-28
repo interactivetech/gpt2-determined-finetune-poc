@@ -8,7 +8,7 @@ hyperparameters:
     epochs: 10
     device: 'cuda'
     gradient_accumulation_steps: 1
-    dataset_name: 'data_science'
+    dataset_name: 'PDS2'
     train_batch_size: 32
     eval_batch_size: 32
 environment:
