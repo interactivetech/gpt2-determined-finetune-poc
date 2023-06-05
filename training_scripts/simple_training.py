@@ -220,7 +220,7 @@ if __name__ == '__main__':
     tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
     tokenizer.pad_token = tokenizer.eos_token
 
-    model = GPT2LMHeadModel.from_pretrained('gpt2')
+    model = GPT2LMHeadModel.from_pretrained('gpt2-large')
     model.to(device)
 
     # train_sampler = RandomSampler(train_dataset) if local_rank == -1 else DistributedSampler(train_dataset)
