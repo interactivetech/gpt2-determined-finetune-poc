@@ -1,0 +1,29 @@
+  python train.py \
+  --cache_dir /cstor/mendeza/hf_test \
+  --dataset_name csv \
+  --data_files "/cstor/coreystaten/data/hackathon/data/*/*_all_narratives.csv" \
+  --model_name_or_path mosaicml/mpt-7b \
+  --torch_dtype=bfloat16 \
+  --tokenizer_name EleutherAI/gpt-neox-20b \
+  --bf16 \
+  --block_size 2048 \
+  --low_cpu_mem_usage \
+  --output_dir /cstor/mendeza/hf_output/  \
+  --remove_unused_columns False \
+  --do_train \
+  --do_eval \
+  --max_steps 100 \
+  --per_device_train_batch_size 1 \
+  --per_device_eval_batch_size 1 \
+  --logging_strategy steps \
+  --logging_steps 10 \
+  --evaluation_strategy steps \
+  --eval_steps 1000 \
+  --save_total_limit 3 \
+  --seed 133 \
+  --save_strategy steps \
+  --save_steps 1000 \
+  --trust_remote_code \
+  --validation_split_percentage 10 \
+  --deepspeed zero_stage_2.json \
+  --overwrite_output_dir

@@ -1,4 +1,4 @@
-python train_causal_llm.py 
+python train_causal_llm2.py 
   --cache_dir /cstor/mendeza/hf_test/ \
   --dataset_name wikitext \
   --dataset_config_name wikitext-2-v1 \
