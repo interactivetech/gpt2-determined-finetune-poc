@@ -1,4 +1,4 @@
-python -m torch.distributed.launch --nproc_per_node 2  train_clm.py \
+python -m torch.distributed.launch --nproc_per_node 8  train_clm.py \
     --model_name_or_path gpt2 \
     --dataset_name wikitext \
     --dataset_config_name wikitext-2-raw-v1 \

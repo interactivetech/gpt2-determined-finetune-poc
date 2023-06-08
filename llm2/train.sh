@@ -9,4 +9,4 @@ python train_clm.py \
     --do_eval \
     --output_dir /cstor/mendeza/hf_output/ \
     --overwrite_output_dir \
-    --trust-remote-code
+    --dataloader_pin_memory 
