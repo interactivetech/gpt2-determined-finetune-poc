@@ -1,4 +1,4 @@
-deepspeed --num_gpus=1  train_clm.py \
+deepspeed --num_gpus=8  train_clm.py \
     --model_name_or_path gpt2 \
     --dataset_name wikitext \
     --dataset_config_name wikitext-2-raw-v1 \
@@ -9,7 +9,7 @@ deepspeed --num_gpus=1  train_clm.py \
     --do_eval \
     --output_dir /cstor/mendeza/hf_output/ \
     --overwrite_output_dir \
-    --deepspeed zero2_config_accelerate.json
+    --deepspeed zero_stage_2.json
     # "/cstor/coreystaten/data/hackathon/data/*/*_all_narratives.csv"
 # accelerate launch --gpu_ids='all' train_clm.py \
 #     --model_name_or_path gpt2 \
