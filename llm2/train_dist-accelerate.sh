@@ -1,4 +1,4 @@
-accelerate launch --gpu_ids='0,1,2'  train_clm.py \
+accelerate launch --gpu_ids='all'  train_clm.py \
     --model_name_or_path gpt2 \
     --dataset_name wikitext \
     --dataset_config_name wikitext-2-raw-v1 \
