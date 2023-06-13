@@ -25,4 +25,4 @@ deepspeed --num_nodes=$NNODES --num_gpus=$NGPUS run_clm.py  \
     --max_steps $MAX_STEPS \
     --save_strategy "no" \
     --low_cpu_mem_usage \
-    --deepspeed stage_22.json
+    --deepspeed stage_22_cg_false.json
